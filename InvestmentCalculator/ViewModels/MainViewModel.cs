@@ -1,39 +1,142 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using InvestmentCalculator.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace InvestmentCalculator.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public class MainViewModel : INotifyPropertyChanged
 {
-    [ObservableProperty]
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    // Приватные поля
     private double _initialAmount = 100000;
-
-    [ObservableProperty]
     private double _monthlyContribution = 10000;
-
-    [ObservableProperty]
     private double _interestRate = 12;
-
-    [ObservableProperty]
     private int _years = 5;
-
-    [ObservableProperty]
     private double _futureValue;
-
-    [ObservableProperty]
     private double _totalInvested;
-
-    [ObservableProperty]
     private double _totalInterest;
 
-    public List<(int Year, double Value)> ChartData { get; set; } = new();
+    // Публичные свойства с защитой от пустых строк
+    public double InitialAmount
+    {
+        get => _initialAmount;
+        set
+        {
+            if (_initialAmount != value)
+            {
+                _initialAmount = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public double MonthlyContribution
+    {
+        get => _monthlyContribution;
+        set
+        {
+            if (_monthlyContribution != value)
+            {
+                _monthlyContribution = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public double InterestRate
+    {
+        get => _interestRate;
+        set
+        {
+            if (_interestRate != value)
+            {
+                _interestRate = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public int Years
+    {
+        get => _years;
+        set
+        {
+            // Защита от отрицательных значений и пустых строк (через привязку)
+            if (value < 0) value = 0;
+            if (_years != value)
+            {
+                _years = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public double FutureValue
+    {
+        get => _futureValue;
+        set
+        {
+            if (_futureValue != value)
+            {
+                _futureValue = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public double TotalInvested
+    {
+        get => _totalInvested;
+        set
+        {
+            if (_totalInvested != value)
+            {
+                _totalInvested = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    public double TotalInterest
+    {
+        get => _totalInterest;
+        set
+        {
+            if (_totalInterest != value)
+            {
+                _totalInterest = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    // Данные для графика
+    private List<(int Year, double Value)> _chartData = new();
+    public List<(int Year, double Value)> ChartData
+    {
+        get => _chartData;
+        set
+        {
+            if (_chartData != value)
+            {
+                _chartData = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     // Команды
     public IRelayCommand CalculateCommand { get; }
@@ -51,7 +154,9 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
+            // Очищаем старые данные графика
             ChartData.Clear();
+
             double rate = InterestRate / 100.0;
             TotalInvested = InitialAmount + MonthlyContribution * 12 * Years;
 
@@ -79,8 +184,12 @@ public partial class MainViewModel : ObservableObject
 
     private void GenerateChartData(double rate)
     {
-        ChartData.Clear();
-        if (Years <= 0) return;
+        var newData = new List<(int Year, double Value)>();
+        if (Years <= 0)
+        {
+            ChartData = newData;
+            return;
+        }
 
         for (int year = 1; year <= Years; year++)
         {
@@ -94,16 +203,17 @@ public partial class MainViewModel : ObservableObject
             {
                 valueAtYear = InitialAmount + MonthlyContribution * 12 * year;
             }
-            ChartData.Add((year, Math.Round(valueAtYear, 2)));
+            newData.Add((year, Math.Round(valueAtYear, 2)));
         }
 
-        OnPropertyChanged(nameof(ChartData));
+        ChartData = newData; // через свойство, чтобы вызвать OnPropertyChanged
     }
 
     private async Task SaveAsync()
     {
         try
         {
+            // Если расчёт не выполнялся, делаем его
             if (TotalInvested == 0 && TotalInterest == 0 && FutureValue == 0 && (InitialAmount != 0 || MonthlyContribution != 0))
             {
                 Calculate();

@@ -47,7 +47,7 @@
 
         <!-- Строка 4: Срок (лет) -->
         <TextBlock Text="Срок (лет):" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="5"/>
-        <TextBox Text="{Binding Years, UpdateSourceTrigger=PropertyChanged}" Grid.Row="4" Grid.Column="1" Margin="5" Padding="3"/>
+        <TextBox Text="{Binding Years, UpdateSourceTrigger=PropertyChanged}" Grid.Row="4" Grid.Column="1" Margin="5" Padding="3"  />
 
         <!-- Строка 5: Кнопки -->
         <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
