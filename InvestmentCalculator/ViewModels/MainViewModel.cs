@@ -2,15 +2,9 @@
 using CommunityToolkit.Mvvm.Input;
 using InvestmentCalculator.Models;
 using Microsoft.EntityFrameworkCore;
-using ScottPlot.TickGenerators.Financial;
-using System;
 using System;
 using System.Collections.Generic;
-using System.Collections.Generic;
 using System.Linq;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -39,9 +33,20 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private double _totalInterest;
 
-    public List<(int Year, double Value)> ChartData { get; set; } = [];
+    public List<(int Year, double Value)> ChartData { get; set; } = new();
 
-    [RelayCommand]
+    // Команды
+    public IRelayCommand CalculateCommand { get; }
+    public IAsyncRelayCommand SaveAsyncCommand { get; }
+    public IRelayCommand OpenHistoryCommand { get; }
+
+    public MainViewModel()
+    {
+        CalculateCommand = new RelayCommand(Calculate);
+        SaveAsyncCommand = new AsyncRelayCommand(SaveAsync);
+        OpenHistoryCommand = new RelayCommand(OpenHistory);
+    }
+
     private void Calculate()
     {
         try
@@ -91,30 +96,30 @@ public partial class MainViewModel : ObservableObject
             }
             ChartData.Add((year, Math.Round(valueAtYear, 2)));
         }
+
         OnPropertyChanged(nameof(ChartData));
     }
 
-    [RelayCommand]
     private async Task SaveAsync()
     {
-        if (TotalInvested == 0 && TotalInterest == 0 && FutureValue == 0 && (InitialAmount != 0 || MonthlyContribution != 0))
-        {
-            Calculate();
-        }
-
-        var calculation = new Calculation
-        {
-            InitialAmount = InitialAmount,
-            MonthlyContribution = MonthlyContribution,
-            InterestRate = InterestRate,
-            Years = Years,
-            FutureValue = FutureValue,
-            TotalInvested = TotalInvested,
-            TotalInterest = TotalInterest
-        };
-
         try
         {
+            if (TotalInvested == 0 && TotalInterest == 0 && FutureValue == 0 && (InitialAmount != 0 || MonthlyContribution != 0))
+            {
+                Calculate();
+            }
+
+            var calculation = new Calculation
+            {
+                InitialAmount = InitialAmount,
+                MonthlyContribution = MonthlyContribution,
+                InterestRate = InterestRate,
+                Years = Years,
+                FutureValue = FutureValue,
+                TotalInvested = TotalInvested,
+                TotalInterest = TotalInterest
+            };
+
             await using var db = new AppDbContext();
             await db.Calculations.AddAsync(calculation);
             await db.SaveChangesAsync();
@@ -126,8 +131,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private static void OpenHistory()
+    private void OpenHistory()
     {
         var historyWindow = new Views.HistoryWindow();
         historyWindow.ShowDialog();

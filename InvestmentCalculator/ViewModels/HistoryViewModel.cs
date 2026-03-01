@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InvestmentCalculator.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -16,28 +11,56 @@ namespace InvestmentCalculator.ViewModels;
 
 public partial class HistoryViewModel : ObservableObject
 {
-    [ObservableProperty]
+    // Приватное поле для коллекции
     private ObservableCollection<Calculation> _calculations = new();
 
-    [ObservableProperty]
+    // Публичное свойство только для чтения (сама коллекция уведомляет об изменениях)
+    public ObservableCollection<Calculation> Calculations => _calculations;
+
+    // Поле и свойство для выбранной записи с уведомлением
     private Calculation? _selectedCalculation;
+    public Calculation? SelectedCalculation
+    {
+        get => _selectedCalculation;
+        set
+        {
+            if (_selectedCalculation != value)
+            {
+                _selectedCalculation = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    // Команды (объявляем как свойства только для чтения)
+    public IAsyncRelayCommand LoadDataAsyncCommand { get; }
+    public IAsyncRelayCommand DeleteAsyncCommand { get; }
+    public IAsyncRelayCommand RefreshAsyncCommand { get; }
 
     public HistoryViewModel()
     {
-        _ = LoadDataAsync();
+        // Инициализируем команды в конструкторе
+        LoadDataAsyncCommand = new AsyncRelayCommand(LoadDataAsync);
+        DeleteAsyncCommand = new AsyncRelayCommand(DeleteAsync);
+        RefreshAsyncCommand = new AsyncRelayCommand(RefreshAsync);
+
+        // Загружаем данные при создании ViewModel
+        LoadDataAsyncCommand.ExecuteAsync(null);
     }
 
+    // Загрузка данных из БД
     private async Task LoadDataAsync()
     {
         try
         {
             await using var db = new AppDbContext();
             var list = await db.Calculations
-                              .OrderByDescending(c => c.CalculationDate)
-                              .ToListAsync();
-            Calculations.Clear();
+                .OrderByDescending(c => c.CalculationDate)
+                .ToListAsync();
+
+            _calculations.Clear();
             foreach (var item in list)
-                Calculations.Add(item);
+                _calculations.Add(item);
         }
         catch (Exception ex)
         {
@@ -45,7 +68,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    // Удаление выбранной записи
     private async Task DeleteAsync()
     {
         if (SelectedCalculation == null)
@@ -55,7 +78,7 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var result = MessageBox.Show($"Удалить расчёт от {SelectedCalculation.CalculationDate.ToShortDateString()}?",
-                                     "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (result != MessageBoxResult.Yes)
             return;
 
@@ -67,7 +90,7 @@ public partial class HistoryViewModel : ObservableObject
             {
                 db.Calculations.Remove(itemToRemove);
                 await db.SaveChangesAsync();
-                Calculations.Remove(SelectedCalculation);
+                _calculations.Remove(SelectedCalculation);
                 SelectedCalculation = null;
             }
         }
@@ -77,7 +100,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    // Обновление списка (просто вызывает загрузку)
     private async Task RefreshAsync()
     {
         await LoadDataAsync();
