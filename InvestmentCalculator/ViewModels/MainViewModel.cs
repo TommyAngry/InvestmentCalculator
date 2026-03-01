@@ -39,7 +39,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private double _totalInterest;
 
-    public List<(int Year, double Value)> ChartData { get; set; } = new();
+    public List<(int Year, double Value)> ChartData { get; set; } = [];
 
     [RelayCommand]
     private void Calculate()
@@ -127,7 +127,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenHistory()
+    private static void OpenHistory()
     {
         var historyWindow = new Views.HistoryWindow();
         historyWindow.ShowDialog();

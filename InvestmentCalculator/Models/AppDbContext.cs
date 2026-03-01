@@ -9,7 +9,19 @@ public class AppDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        string dbPath = Path.Combine(Directory.GetCurrentDirectory(), "investments.db");
+        // Получаем путь к папке, где лежит исполняемый файл (например, ...\bin\Debug\net9.0-windows\)
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+        // Поднимаемся на три уровня вверх, чтобы попасть в корень проекта
+        // Из "bin/Debug/net9.0-windows" -> "bin/Debug" -> "bin" -> корень проекта
+        string projectRoot = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\"));
+
+        // Формируем полный путь к файлу базы данных в корне проекта
+        string dbPath = Path.Combine(projectRoot, "investments.db");
+
+        // Опционально: выводим путь для отладки (посмотреть в окно Output)
+        System.Diagnostics.Debug.WriteLine($"Путь к БД: {dbPath}");
+
         optionsBuilder.UseSqlite($"Data Source={dbPath}");
     }
 
